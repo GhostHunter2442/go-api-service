@@ -27,9 +27,29 @@ func NewCustomerRepository(db *gorm.DB) CustomerRepository {
 	return &customerRepository{db: db}
 }
 
+// func (r *customerRepository) GetByID(ctx context.Context, id uint) (*model.Customer, error) {
+// 	var c model.Customer
+// 	if err := r.db.WithContext(ctx).First(&c, id).Error; err != nil {
+// 		if errors.Is(err, gorm.ErrRecordNotFound) {
+// 			return nil, apperror.NotFound("customer not found")
+// 		}
+// 		return nil, fmt.Errorf("get customer by id: %w", err)
+// 	}
+// 	return &c, nil
+// }
+
 func (r *customerRepository) GetByID(ctx context.Context, id uint) (*model.Customer, error) {
 	var c model.Customer
-	if err := r.db.WithContext(ctx).First(&c, id).Error; err != nil {
+	err := r.db.WithContext(ctx).
+		Select(
+			"customer_id", "id_card", "customer_code", "customer_type",
+			"phone_number", "firstname", "lastname",
+			"gender", "date_of_birth", "email",
+			"status", "total_point", "is_verify",
+			"create_date", "update_date",
+		).
+		First(&c, id).Error
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperror.NotFound("customer not found")
 		}

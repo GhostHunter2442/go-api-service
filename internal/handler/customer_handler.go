@@ -85,5 +85,6 @@ func (h *CustomerHandler) GetByID(c *gin.Context) {
 		c.Error(err)
 		return
 	}
-	c.JSON(200, response.Success(cust))
+	// c.JSON(200, response.Success(cust))
+	c.JSON(200, response.Success(dto.NewCustomerDetail(cust))) // ← map ผ่าน DTO
 }
