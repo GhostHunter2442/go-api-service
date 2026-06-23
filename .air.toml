@@ -1,0 +1,24 @@
+# air — Go live reload (https://github.com/air-verse/air)
+# รัน: air   (watch ไฟล์ .go → rebuild → restart server อัตโนมัติ)
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  # Windows: build เป็น .exe ลงโฟลเดอร์ tmp (entrypoint อยู่ที่ cmd/api)
+  cmd = "go build -o ./tmp/main.exe ./cmd/api"
+  bin = "tmp/main.exe"
+  full_bin = "tmp/main.exe"
+  # เฝ้าเฉพาะไฟล์เหล่านี้
+  include_ext = ["go"]
+  # ไม่ต้องเฝ้าโฟลเดอร์พวกนี้
+  exclude_dir = ["tmp", "bin", "node_modules", ".git", ".github"]
+  # หน่วงนิดนึงกัน rebuild รัวตอนเซฟไฟล์หลายไฟล์
+  delay = 300
+  stop_on_error = true
+
+[log]
+  time = true
+
+[misc]
+  # ลบ tmp ทิ้งตอนปิด air
+  clean_on_exit = true

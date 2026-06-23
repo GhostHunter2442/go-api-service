@@ -1,0 +1,103 @@
+basePath: /
+definitions:
+  response.Body:
+    properties:
+      data: {}
+      error:
+        $ref: '#/definitions/response.ErrorInfo'
+      meta: {}
+      success:
+        type: boolean
+    type: object
+  response.ErrorInfo:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+      request_id:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: REST API service (Gin + GORM + SQL Server) — layered architecture
+  title: go-api-service API
+  version: "1.0"
+paths:
+  /api/v1/customers:
+    get:
+      parameters:
+      - description: จำนวนสูงสุด (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      - description: ข้ามกี่ record
+        in: query
+        name: offset
+        type: integer
+      - description: ค้นด้วยเบอร์โทร (unique)
+        in: query
+        name: phone
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: List customers
+      tags:
+      - customers
+  /api/v1/customers/{id}:
+    get:
+      parameters:
+      - description: customer id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Body'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: Get customer by id
+      tags:
+      - customers
+  /healthz:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: Liveness probe
+      tags:
+      - health
+  /readyz:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Body'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: Readiness probe (ping DB)
+      tags:
+      - health
+swagger: "2.0"
