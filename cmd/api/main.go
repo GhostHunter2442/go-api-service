@@ -4,7 +4,6 @@
 //	@title			go-api-service API
 //	@version		1.0
 //	@description	REST API service (Gin + GORM + SQL Server) — layered architecture
-//	@host			localhost:8080
 //	@BasePath		/
 package main
 

@@ -19,5 +19,8 @@ go.work.sum
 .idea/
 .vscode/
 
+# Kubernetes secret (มีรหัสผ่าน DB — เหมือน .env)
+k8s/secret.yaml
+
 # air (Go live reload)
 tmp/

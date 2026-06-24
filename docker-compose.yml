@@ -1,0 +1,9 @@
+services:
+  api:
+    build: .                      # = docker build .  (เรียก Dockerfile ในโฟลเดอร์นี้)
+    image: go-api-service:local   # ตั้งชื่อ:แท็ก ให้ image ที่ build ได้
+    container_name: go-api-local  # = --name go-api-local
+    env_file: .env                # = --env-file .env  (compose อ่านให้อัตโนมัติ)
+    ports:
+      - "8080:8080"               # = -p 8080:8080  (host:container) — 8080 ใช้ Swagger ได้
+    restart: unless-stopped       # container ล่ม/รีบูตเครื่อง → รีสตาร์ทเอง (ไม่รีสตาร์ทถ้าเราสั่ง stop เอง)

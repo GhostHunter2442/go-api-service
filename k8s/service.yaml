@@ -1,0 +1,14 @@
+# Service = endpoint คงที่หน้า pod หลายตัว + load balance ให้อัตโนมัติ
+# pod เกิด/ตาย/ย้ายเครื่อง IP เปลี่ยนตลอด แต่ Service IP/ชื่อคงที่
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-api
+spec:
+  type: NodePort                  # เปิดพอร์ตบน node → Docker Desktop แมปออก localhost
+  selector:
+    app: go-api                   # ส่ง traffic ให้ pod ที่ label app=go-api และ "ready" เท่านั้น
+  ports:
+    - port: 80                    # พอร์ตของ Service (ภายใน cluster)
+      targetPort: 8080            # พอร์ตใน container
+      nodePort: 30080             # พอร์ตบนเครื่อง → เข้าที่ http://localhost:30080

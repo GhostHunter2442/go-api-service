@@ -1,0 +1,11 @@
+# PodDisruptionBudget = กันไม่ให้ "งานบำรุงรักษา" (drain node, อัปเดต) ดึง pod ลงพร้อมกันจนเหลือ 0
+# minAvailable: 1 = ต้องมี pod พร้อมใช้อย่างน้อย 1 ตัวเสมอ
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: go-api
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: go-api

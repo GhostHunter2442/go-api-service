@@ -1,0 +1,18 @@
+# ค่า config ที่ "ไม่ลับ" — inject เข้า pod ผ่าน envFrom (ดู deployment.yaml)
+# ค่าลับ (DB_USER/DB_PASSWORD) อยู่ใน secret.yaml แยกต่างหาก
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: go-api-config
+data:
+  APP_ENV: "production"          # k8s = สภาพแวดล้อมจริง → gin release mode
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"             # production ใช้ json (อ่านด้วย log aggregator ง่าย)
+  HTTP_PORT: "8080"
+  DB_HOST: "192.168.251.120"     # SQL Server บน LAN — pod ต่อตรงผ่าน IP นี้
+  DB_PORT: "1433"
+  DB_NAME: "easymoney_dev"
+  DB_ENCRYPT: "disable"
+  DB_MAX_OPEN_CONNS: "25"
+  DB_MAX_IDLE_CONNS: "25"
+  DB_CONN_MAX_LIFETIME: "5m"

@@ -1,0 +1,56 @@
+# Deployment = ตัวคุม pod: รักษาจำนวน replica, ซ่อมเอง (self-heal), rolling update
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-api
+  labels:
+    app: go-api
+spec:
+  replicas: 2                      # ⭐ 2 ก๊อป — ตัวนึงตาย อีกตัวยังรับ traffic (ไม่ down)
+  selector:
+    matchLabels:
+      app: go-api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0            # ⭐ deploy ใหม่แบบ "ห้ามมีตัวหายระหว่างทาง" = zero downtime
+      maxSurge: 1                  # สร้างตัวใหม่เกินได้ 1 ตัวระหว่างเปลี่ยนเวอร์ชัน
+  template:
+    metadata:
+      labels:
+        app: go-api
+    spec:
+      containers:
+        - name: go-api
+          image: go-api-service:local
+          imagePullPolicy: Never   # ใช้ image จาก local store (Docker Desktop k8s แชร์กัน — ไม่ต้อง push registry)
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: go-api-config   # ค่าไม่ลับ
+            - secretRef:
+                name: go-api-secret   # ค่าลับ (DB_USER/DB_PASSWORD)
+          # ⭐ liveness = "ยังมีชีวิตไหม" (ไม่แตะ DB) → ตาย/ค้าง k8s kill แล้วสร้างใหม่
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 10
+            failureThreshold: 3
+          # ⭐ readiness = "พร้อมรับงานไหม" (ping DB) → ถ้า DB ต่อไม่ติด k8s หยุดส่ง traffic ให้ pod นี้
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests:               # ขั้นต่ำที่ scheduler จองให้
+              cpu: 50m
+              memory: 32Mi
+            limits:                 # เพดาน — เกินแล้วโดนจำกัด/kill
+              cpu: 250m
+              memory: 128Mi
