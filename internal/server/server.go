@@ -8,6 +8,7 @@ import (
 	"github.com/apidet/go-api-service/internal/config"
 	"github.com/apidet/go-api-service/internal/handler"
 	"github.com/apidet/go-api-service/internal/middleware"
+	"github.com/apidet/go-api-service/pkg/token"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,6 +16,7 @@ import (
 type Handlers struct {
 	Health   *handler.HealthHandler
 	Customer *handler.CustomerHandler
+	Auth     *handler.AuthHandler
 }
 
 // New สร้าง *http.Server ที่ใช้ Gin engine พร้อม middleware stack
@@ -24,7 +26,7 @@ type Handlers struct {
 //	Recovery → RequestID → Logger → CORS → ErrorHandler → routes
 //
 // Recovery นอกสุด (กัน panic ทุกชั้น), Logger เห็น status สุดท้ายที่ ErrorHandler เขียน
-func New(cfg config.Config, log *slog.Logger, h Handlers) *http.Server {
+func New(cfg config.Config, log *slog.Logger, h Handlers, tm *token.Manager) *http.Server {
 	if cfg.IsProduction() {
 		gin.SetMode(gin.ReleaseMode)
 	} else {
@@ -40,7 +42,7 @@ func New(cfg config.Config, log *slog.Logger, h Handlers) *http.Server {
 		middleware.ErrorHandler(log),
 	)
 
-	registerRoutes(engine, h)
+	registerRoutes(engine, h, tm)
 
 	return &http.Server{
 		Addr:         ":" + cfg.HTTP.Port,

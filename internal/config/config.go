@@ -14,10 +14,12 @@ import (
 
 // Config คือค่า config ทั้งหมดของ service
 type Config struct {
-	Env  string // "development" | "production"
-	HTTP HTTPConfig
-	DB   DBConfig
-	Log  LogConfig
+	Env   string // "development" | "production"
+	HTTP  HTTPConfig
+	DB    DBConfig
+	Log   LogConfig
+	Auth  AuthConfig
+	Redis RedisConfig
 }
 
 // LogConfig ค่าเกี่ยวกับ structured logging
@@ -50,6 +52,24 @@ type DBConfig struct {
 	ConnMaxLife  time.Duration
 }
 
+// เพิ่มใน Config struct:
+//   Auth  AuthConfig
+//   Redis RedisConfig
+
+type AuthConfig struct {
+	JWTSecret  string
+	Pepper     string
+	AccessTTL  time.Duration
+	RefreshTTL time.Duration
+	Issuer     string
+}
+
+type RedisConfig struct {
+	Addr     string
+	Password string
+	DB       int
+}
+
 // Load อ่านค่าจาก env (มี default สำหรับ dev) — เรียกครั้งเดียวตอน main
 //
 // dev: ถ้ามีไฟล์ .env จะ load เข้า process ให้อัตโนมัติ
@@ -79,6 +99,18 @@ func Load() Config {
 			MaxOpenConns: getEnvInt("DB_MAX_OPEN_CONNS", 25),
 			MaxIdleConns: getEnvInt("DB_MAX_IDLE_CONNS", 25),
 			ConnMaxLife:  getEnvDuration("DB_CONN_MAX_LIFETIME", 5*time.Minute),
+		},
+		Auth: AuthConfig{
+			JWTSecret:  getEnv("JWT_SECRET", ""),
+			Pepper:     getEnv("PEPPER", ""),
+			AccessTTL:  getEnvDuration("JWT_ACCESS_TTL", 15*time.Minute),
+			RefreshTTL: getEnvDuration("JWT_REFRESH_TTL", 720*time.Hour),
+			Issuer:     getEnv("JWT_ISSUER", "go-api-service"),
+		},
+		Redis: RedisConfig{
+			Addr:     getEnv("REDIS_ADDR", "localhost:6379"),
+			Password: getEnv("REDIS_PASSWORD", ""),
+			DB:       getEnvInt("REDIS_DB", 0),
 		},
 	}
 }

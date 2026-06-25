@@ -1,5 +1,15 @@
 basePath: /
 definitions:
+  dto.LoginRequest:
+    properties:
+      password:
+        type: string
+      phone_number:
+        type: string
+    required:
+    - password
+    - phone_number
+    type: object
   response.Body:
     properties:
       data: {}
@@ -24,6 +34,61 @@ info:
   title: go-api-service API
   version: "1.0"
 paths:
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: credentials
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Body'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: Login ด้วย phone_number + password
+      tags:
+      - auth
+  /api/v1/auth/logout:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Body'
+      security:
+      - BearerAuth: []
+      summary: Logout (เพิกถอน refresh ทั้งหมด)
+      tags:
+      - auth
+  /api/v1/auth/refresh:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Body'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Body'
+      summary: ขอ access token ใหม่ด้วย refresh cookie
+      tags:
+      - auth
   /api/v1/customers:
     get:
       parameters:
@@ -46,10 +111,12 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/response.Body'
+      security:
+      - BearerAuth: []
       summary: List customers
       tags:
       - customers
-  /api/v1/customers/{id}:
+  /api/v1/customers/{id}/profile:
     get:
       parameters:
       - description: customer id
@@ -68,7 +135,9 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/response.Body'
-      summary: Get customer by id
+      security:
+      - BearerAuth: []
+      summary: Get customer profile
       tags:
       - customers
   /healthz:
@@ -99,4 +168,10 @@ paths:
       summary: Readiness probe (ping DB)
       tags:
       - health
+securityDefinitions:
+  BearerAuth:
+    description: ใส่ "Bearer <access_token>" (มี Bearer นำหน้า เว้นวรรค 1 ที)
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

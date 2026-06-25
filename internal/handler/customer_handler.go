@@ -31,6 +31,7 @@ func NewCustomerHandler(svc *service.CustomerService) *CustomerHandler {
 //	@Param		offset	query	int		false	"ข้ามกี่ record"
 //	@Param		phone	query	string	false	"ค้นด้วยเบอร์โทร (unique)"
 //	@Success	200	{object}	response.Body
+//	@Security	BearerAuth
 //	@Router		/api/v1/customers [get]
 func (h *CustomerHandler) List(c *gin.Context) {
 	var q dto.ListCustomerQuery
@@ -64,23 +65,24 @@ func (h *CustomerHandler) List(c *gin.Context) {
 	}))
 }
 
-// GetByID ดึงลูกค้าตาม customer_id
+// GetProfile ดึงลูกค้าตาม customer_id
 //
-//	@Summary	Get customer by id
+//	@Summary	Get customer profile
 //	@Tags		customers
 //	@Produce	json
 //	@Param		id	path		int	true	"customer id"
 //	@Success	200	{object}	response.Body
 //	@Failure	404	{object}	response.Body
-//	@Router		/api/v1/customers/{id} [get]
-func (h *CustomerHandler) GetByID(c *gin.Context) {
+//	@Security	BearerAuth
+//	@Router		/api/v1/customers/{id}/profile [get]
+func (h *CustomerHandler) GetProfile(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		c.Error(apperror.BadRequest("invalid id"))
 		return
 	}
 
-	cust, err := h.svc.GetByID(c.Request.Context(), uint(id))
+	cust, err := h.svc.GetProfile(c.Request.Context(), uint(id))
 	if err != nil {
 		c.Error(err)
 		return

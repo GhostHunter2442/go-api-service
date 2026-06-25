@@ -23,9 +23,9 @@ func NewCustomerService(repo repository.CustomerRepository) *CustomerService {
 	return &CustomerService{repo: repo}
 }
 
-// GetByID ดึงลูกค้าตาม customer_id
-func (s *CustomerService) GetByID(ctx context.Context, id uint) (*model.Customer, error) {
-	return s.repo.GetByID(ctx, id)
+// GetProfile ดึงลูกค้าตาม customer_id
+func (s *CustomerService) GetProfile(ctx context.Context, id uint) (*model.Customer, error) {
+	return s.repo.GetProfile(ctx, id)
 }
 
 // GetByPhone ดึงลูกค้าตามเบอร์โทร (unique)
