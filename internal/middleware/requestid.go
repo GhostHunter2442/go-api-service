@@ -2,6 +2,7 @@
 package middleware
 
 import (
+	"github.com/apidet/go-api-service/pkg/httpclient"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -23,6 +24,8 @@ func RequestID() gin.HandlerFunc {
 		}
 		c.Set(RequestIDKey, id)
 		c.Header(RequestIDHeader, id)
+		// ฝังลง request context ด้วย เพื่อให้ outbound call (httpclient) แนบ X-Request-ID ต่อได้
+		c.Request = c.Request.WithContext(httpclient.WithRequestID(c.Request.Context(), id))
 		c.Next()
 	}
 }

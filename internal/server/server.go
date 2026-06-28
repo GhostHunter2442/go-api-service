@@ -17,6 +17,7 @@ type Handlers struct {
 	Health   *handler.HealthHandler
 	Customer *handler.CustomerHandler
 	Auth     *handler.AuthHandler
+	Ticket   *handler.TicketHandler
 }
 
 // New สร้าง *http.Server ที่ใช้ Gin engine พร้อม middleware stack

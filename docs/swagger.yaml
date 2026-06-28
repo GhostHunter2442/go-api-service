@@ -10,6 +10,26 @@ definitions:
     - password
     - phone_number
     type: object
+  dto.UpdateProfileRequest:
+    properties:
+      date_of_birth:
+        type: string
+      email:
+        type: string
+      firstname:
+        maxLength: 100
+        type: string
+      gender:
+        description: N=ไม่ระบุ, M=ชาย, F=หญิง
+        enum:
+        - "N"
+        - M
+        - F
+        type: string
+      lastname:
+        maxLength: 100
+        type: string
+    type: object
   response.Body:
     properties:
       data: {}
@@ -116,19 +136,17 @@ paths:
       summary: List customers
       tags:
       - customers
-  /api/v1/customers/{id}/profile:
+  /api/v1/customers/profile:
     get:
-      parameters:
-      - description: customer id
-        in: path
-        name: id
-        required: true
-        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
+          schema:
+            $ref: '#/definitions/response.Body'
+        "401":
+          description: Unauthorized
           schema:
             $ref: '#/definitions/response.Body'
         "404":
@@ -137,9 +155,61 @@ paths:
             $ref: '#/definitions/response.Body'
       security:
       - BearerAuth: []
-      summary: Get customer profile
+      summary: Get my profile
       tags:
       - customers
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: field ที่ต้องการแก้ (ส่งเฉพาะที่จะแก้)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Body'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Body'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Body'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Body'
+      security:
+      - BearerAuth: []
+      summary: Update my profile
+      tags:
+      - customers
+  /api/v1/tickets/active:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Body'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Body'
+      security:
+      - BearerAuth: []
+      summary: Get my active tickets
+      tags:
+      - tickets
   /healthz:
     get:
       produces:

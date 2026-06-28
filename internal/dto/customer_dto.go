@@ -48,6 +48,39 @@ func NewCustomerList(cs []model.Customer) []CustomerListItem {
 	return items
 }
 
+// UpdateProfileRequest bind จาก JSON body ของ PATCH /customers/profile
+// ทุก field เป็น pointer → partial update: ส่งมาเฉพาะ field ที่อยากแก้ (nil = ไม่แตะ)
+// อนุญาตแก้เฉพาะ field ที่ปลอดภัย — ไม่รวม phone_number/status/total_point/permission
+type UpdateProfileRequest struct {
+	Firstname   *string    `json:"firstname"   binding:"omitempty,max=100"`
+	Lastname    *string    `json:"lastname"    binding:"omitempty,max=100"`
+	Gender      *string    `json:"gender"      binding:"omitempty,oneof=N M F"` // N=ไม่ระบุ, M=ชาย, F=หญิง
+	Email       *string    `json:"email"       binding:"omitempty,email"`
+	DateOfBirth *time.Time `json:"date_of_birth"`
+}
+
+// ToUpdateMap แปลงเป็น map[column]value เฉพาะ field ที่ส่งมา (non-nil)
+// คืน map ว่างถ้าไม่มีอะไรแก้ — ใช้ column name ตรงกับ DB เพื่อส่งให้ GORM Updates
+func (r UpdateProfileRequest) ToUpdateMap() map[string]any {
+	fields := make(map[string]any)
+	if r.Firstname != nil {
+		fields["firstname"] = *r.Firstname
+	}
+	if r.Lastname != nil {
+		fields["lastname"] = *r.Lastname
+	}
+	if r.Gender != nil {
+		fields["gender"] = *r.Gender
+	}
+	if r.Email != nil {
+		fields["email"] = *r.Email
+	}
+	if r.DateOfBirth != nil {
+		fields["date_of_birth"] = *r.DateOfBirth
+	}
+	return fields
+}
+
 // CustomerDetail เป็น response แบบเต็มสำหรับ GetByID
 type CustomerDetail struct {
 	CustomerID   uint       `json:"customer_id"`

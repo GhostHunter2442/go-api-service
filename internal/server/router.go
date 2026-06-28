@@ -33,7 +33,14 @@ func registerRoutes(r *gin.Engine, h Handlers, tm *token.Manager) {
 		customers.Use(middleware.Auth(tm))
 		{
 			customers.GET("", h.Customer.List)
-			customers.GET("/:id/profile", h.Customer.GetProfile)
+			customers.GET("/profile", h.Customer.GetProfile)
+			customers.PATCH("/profile", h.Customer.UpdateProfile) // แก้โปรไฟล์ตัวเอง (id จาก token)
+		}
+		// protected — ticket (ต้องมี access token)
+		tickets := v1.Group("/tickets")
+		tickets.Use(middleware.Auth(tm))
+		{
+			tickets.GET("/active", h.Ticket.GetActiveTicket) // ticket active ของตัวเอง (id จาก token)
 		}
 	}
 }

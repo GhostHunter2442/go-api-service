@@ -6,17 +6,19 @@ import (
 	// "encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/apidet/go-api-service/internal/model"
 	"github.com/apidet/go-api-service/pkg/apperror"
 	"gorm.io/gorm"
 )
 
-// CustomerRepository อ่านข้อมูลลูกค้า (read-only — ไม่แตะ schema เดิม)
+// CustomerRepository เข้าถึงข้อมูลลูกค้า (อ่านเป็นหลัก + อัปเดต field ที่อนุญาตของตัวเอง)
 type CustomerRepository interface {
 	GetProfile(ctx context.Context, id uint) (*model.Customer, error)
 	GetByPhone(ctx context.Context, phone string) (*model.Customer, error)
 	List(ctx context.Context, limit, offset int) ([]model.Customer, error)
+	UpdateProfile(ctx context.Context, id uint, fields map[string]any) (*model.Customer, error)
 }
 
 type customerRepository struct {
@@ -81,6 +83,27 @@ func (r *customerRepository) GetByPhone(ctx context.Context, phone string) (*mod
 		return nil, fmt.Errorf("get customer by phone: %w", err)
 	}
 	return &c, nil
+}
+
+// UpdateProfile อัปเดตเฉพาะ column ใน fields ของลูกค้าตาม customer_id แล้วคืนข้อมูลล่าสุด
+// - เซ็ต update_date เสมอ → ทำให้ RowsAffected สะท้อน "เจอ row จริงไหม" (ไม่ใช่ no-op)
+// - ใช้ Model+Where (ไม่ใช่ struct) เพื่ออัปเดตจาก map → คุม column ที่แก้ได้แม่นยำ ไม่แตะ field อื่น
+func (r *customerRepository) UpdateProfile(ctx context.Context, id uint, fields map[string]any) (*model.Customer, error) {
+	fields["update_date"] = time.Now()
+
+	res := r.db.WithContext(ctx).
+		Model(&model.Customer{}).
+		Where("customer_id = ?", id).
+		Updates(fields)
+	if res.Error != nil {
+		return nil, fmt.Errorf("update customer profile: %w", res.Error)
+	}
+	if res.RowsAffected == 0 {
+		return nil, apperror.NotFound("customer not found")
+	}
+
+	// อ่านกลับด้วย GetProfile เดิม → ได้ shape เดียวกัน (Select เฉพาะ column ปลอดภัย)
+	return r.GetProfile(ctx, id)
 }
 
 func (r *customerRepository) List(ctx context.Context, limit, offset int) ([]model.Customer, error) {

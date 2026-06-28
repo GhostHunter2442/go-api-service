@@ -27,6 +27,7 @@ import (
 	"github.com/apidet/go-api-service/internal/repository"
 	"github.com/apidet/go-api-service/internal/server"
 	"github.com/apidet/go-api-service/internal/service"
+	"github.com/apidet/go-api-service/pkg/httpclient"
 	"github.com/apidet/go-api-service/pkg/logger"
 	"github.com/apidet/go-api-service/pkg/token"
 )
@@ -59,6 +60,20 @@ func main() {
 	customerRepo := repository.NewCustomerRepository(db)
 	customerSvc := service.NewCustomerService(customerRepo)
 
+	// ticket ดึงจาก external API (ไม่ใช่ DB) → ใช้ httpclient กลาง (pool/retry/timeout/logging อยู่ภายใน)
+	ticketOpts := []httpclient.Option{
+		httpclient.WithTimeout(cfg.Ticket.Timeout),
+		httpclient.WithLogger(log),
+		httpclient.WithUserAgent("go-api-service/ticket"),
+		httpclient.WithRetry(httpclient.DefaultRetry()),
+	}
+	if cfg.Ticket.APIKey != "" {
+		ticketOpts = append(ticketOpts, httpclient.WithHeader("Authorization", "Bearer "+cfg.Ticket.APIKey))
+	}
+	ticketAPI := httpclient.New(cfg.Ticket.BaseURL, ticketOpts...)
+	ticketRepo := repository.NewTicketRepository(ticketAPI)
+	ticketSvc := service.NewTicketService(ticketRepo, customerRepo) // customerRepo: resolve id_card จาก customer_id
+
 	tokenMgr := token.NewManager(cfg.Auth.JWTSecret, cfg.Auth.AccessTTL, cfg.Auth.Issuer)
 	pwStore := repository.NewPasswordStore(rdb)
 	refreshStore := repository.NewRefreshStore(rdb)
@@ -68,6 +83,7 @@ func main() {
 		Health:   handler.NewHealthHandler(db),
 		Customer: handler.NewCustomerHandler(customerSvc),
 		Auth:     handler.NewAuthHandler(authSvc, cfg.Auth.AccessTTL, cfg.Auth.RefreshTTL, cfg.IsProduction()),
+		Ticket:   handler.NewTicketHandler(ticketSvc),
 	}
 
 	// 3) สร้าง Gin server (middleware stack + routes อยู่ใน package server)

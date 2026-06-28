@@ -7,3 +7,30 @@ services:
     ports:
       - "8080:8080"               # = -p 8080:8080  (host:container) — 8080 ใช้ Swagger ได้
     restart: unless-stopped       # container ล่ม/รีบูตเครื่อง → รีสตาร์ทเอง (ไม่รีสตาร์ทถ้าเราสั่ง stop เอง)
+
+  redis:
+    image: redis:7-alpine                       # Redis 7 (เก่า 2.4.6 บน Windows ไม่รองรับ SET ... EX/PX → login พัง)
+    container_name: go-api-redis
+    command: ["redis-server", "--appendonly", "yes"]  # AOF เปิด → refresh token/shadow hash ไม่หายตอนรีสตาร์ท
+    ports:
+      - "6379:6379"               # = -p 6379:6379 — air ที่รันโลคอลต่อ localhost:6379 ได้เหมือนเดิม
+    volumes:
+      - redis-data:/data          # เก็บข้อมูลถาวร (named volume)
+    restart: unless-stopped
+    # ถ้าจะรัน api เป็น container ด้วย (ไม่ใช่ air) → ตั้ง REDIS_ADDR=redis:6379 ใน .env แทน localhost
+
+  redisinsight:                                 # GUI ดู/แก้ข้อมูล Redis (ทางการของ Redis, optional — dev tool)
+    image: redis/redisinsight:latest
+    container_name: redisinsight
+    ports:
+      - "5540:5540"               # เปิด http://localhost:5540
+    volumes:
+      - redisinsight-data:/data   # เก็บ connection config ถาวร (ตั้ง DB ครั้งเดียว)
+    restart: unless-stopped
+    depends_on:
+      - redis
+    # connect ใน UI: ผ่าน compose ใช้ Host=redis Port=6379 (ชื่อ service) / รัน standalone ใช้ host.docker.internal
+
+volumes:
+  redis-data:                     # named volume สำหรับ Redis AOF/RDB
+  redisinsight-data:              # named volume สำหรับ config ของ RedisInsight

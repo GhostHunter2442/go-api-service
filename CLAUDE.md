@@ -28,8 +28,9 @@ go-api-service/
 │   ├── dto/                     # request bind + response shape (แยก API contract จาก model)
 │   ├── repository/              # data access (interface + GORM impl) — mock/สลับ impl ได้
 │   ├── service/                 # business logic — ไม่รู้จัก HTTP, ไม่ผูก Gin
-│   ├── handler/                 # transport (Gin): customer, health
-│   ├── middleware/              # requestid, logger, recovery, cors, errorhandler
+│   ├── handler/                 # transport (Gin): customer, health, auth
+│   ├── middleware/              # requestid, logger, recovery, cors, errorhandler, auth, ratelimit
+│   ├── appctx/                  # request-scoped context value (customer_id) ผ่าน unexported key — layer ล่างอ่านได้ไม่ผูก Gin
 │   └── server/                  # server.go (engine+stack) + router.go (route registration)
 ├── pkg/
 │   ├── logger/                  # slog setup
@@ -43,8 +44,10 @@ go-api-service/
 
 **Endpoints:**
 - `GET /healthz` — liveness (ไม่แตะ DB) · `GET /readyz` — readiness (ping SQL Server)
-- `GET /api/v1/customers?limit=&offset=` — list/paginate (default 50, max 200); `?phone=` ค้นรายเดียว (unique)
-- `GET /api/v1/customers/{id}` — รายเดียวตาม `customer_id`
+- `POST /api/v1/auth/login` (rate limit 5/นาที/IP) · `POST /api/v1/auth/refresh` · `POST /api/v1/auth/logout` (ต้องมี token)
+- `GET /api/v1/customers?limit=&offset=` — list/paginate (default 50, max 200); `?phone=` ค้นรายเดียว (unique) — **ต้องมี token**
+- `GET /api/v1/customers/profile` — โปรไฟล์ของ "ตัวเอง" (อ่าน `customer_id` จาก token ไม่รับ path param) — **ต้องมี token**
+- `PATCH /api/v1/customers/profile` — แก้โปรไฟล์ตัวเอง (partial update; whitelist: firstname/lastname/gender/email/date_of_birth) — **ต้องมี token**
 - `GET /swagger/index.html` — Swagger UI
 
 **Response envelope (ทุก endpoint):**
@@ -82,6 +85,10 @@ curl "http://localhost:8080/api/v1/customers?limit=2"
 - ทิศ dependency: **handler → service → repository → model** ชั้นในไม่รู้จักชั้นนอก;
   repository เป็น **interface** เพื่อ mock ใน test และสลับ impl (GORM → sqlc/sqlx) ได้
 - **DTO แยกจาก model**: response/​request ใช้ struct ใน `internal/dto` ไม่ผูก API เข้ากับ schema ตรงๆ
+- **auth ผ่าน `middleware.Auth(tm)`**: verify Bearer JWT → ตรวจ invariant (`customer_id > 0`) ที่ขอบ **ครั้งเดียว** แล้วฝัง id ลง **request context** ผ่าน `appctx.WithCustomerID(...)` (ไม่ใช้ `c.Set` แบบ string key)
+  — handler/service อ่านด้วย `appctx.CustomerID(c.Request.Context())` (คืน `(uint, bool)`); หลัง Auth middleware id มีค่าเสมอ ละ `ok` ได้
+  — **ห้าม** อ่าน customer_id จาก path/body ในเส้นที่เป็น "ของตัวเอง" — เอาจาก token เท่านั้น (กันแก้ของคนอื่น)
+- **เพิ่ม claim ใน token**: แก้ 3 จุด → `pkg/token/token.go` (custom claims struct + Issue/Verify), `service/auth_service.go` (ส่งค่าตอน issue), `middleware/auth.go` (อ่านกลับ → เก็บลง `appctx`); **ห้ามใส่ของลับใน JWT** (payload decode อ่านได้)
 - **logging ใช้ slog** (`log/slog`) ผ่าน logger ที่ inject — ไม่ใช้ `fmt.Println`/`gin.Default()`
 - **config อ่านที่ startup เท่านั้น** (`config.Load()` ใน main) — layer อื่นรับเป็น argument ไม่อ่าน env เอง
 - **เปิด DB ที่เดียว** ที่ `database.NewSQLServer()` — layer อื่นรับ `*gorm.DB` ไปใช้
@@ -107,6 +114,8 @@ curl "http://localhost:8080/api/v1/customers?limit=2"
 - [x] ต่อ SQL Server ผ่าน GORM (read-only) + health/readiness probe
 - [x] ย้ายไป **Gin** + middleware stack (requestid/logger/recovery/cors/errorhandler) + `/api/v1`
 - [x] structured logging (slog), typed error (apperror), response envelope
+- [x] auth middleware (JWT access + opaque refresh) + rate limit (login 5/นาที/IP)
+- [x] เส้น "ของตัวเอง" อ่าน `customer_id` จาก token (`GET/PATCH /customers/profile`) + write path แรก (UpdateProfile partial + whitelist)
+- [x] request-scoped context ผ่าน `internal/appctx` (unexported key) — เลิก `c.Set` string key
 - [ ] เพิ่ม unit test ให้ service/handler (mock repository, `httptest`)
-- [ ] auth middleware (JWT) + rate limit เมื่อมี endpoint ที่ต้องป้องกัน
 - [ ] migration tool แยก (เช่น golang-migrate) ถ้าต้องจัดการ schema

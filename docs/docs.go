@@ -147,7 +147,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/customers/{id}/profile": {
+        "/api/v1/customers/profile": {
             "get": {
                 "security": [
                     {
@@ -160,14 +160,53 @@ const docTemplate = `{
                 "tags": [
                     "customers"
                 ],
-                "summary": "Get customer profile",
+                "summary": "Get my profile",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "customers"
+                ],
+                "summary": "Update my profile",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "customer id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
+                        "description": "field ที่ต้องการแก้ (ส่งเฉพาะที่จะแก้)",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateProfileRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -177,8 +216,50 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.Body"
                         }
                     },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tickets/active": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tickets"
+                ],
+                "summary": "Get my active tickets",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Body"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/response.Body"
                         }
@@ -244,6 +325,34 @@ const docTemplate = `{
                 },
                 "phone_number": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.UpdateProfileRequest": {
+            "type": "object",
+            "properties": {
+                "date_of_birth": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "firstname": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "gender": {
+                    "description": "N=ไม่ระบุ, M=ชาย, F=หญิง",
+                    "type": "string",
+                    "enum": [
+                        "N",
+                        "M",
+                        "F"
+                    ]
+                },
+                "lastname": {
+                    "type": "string",
+                    "maxLength": 100
                 }
             }
         },

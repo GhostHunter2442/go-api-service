@@ -14,12 +14,21 @@ import (
 
 // Config คือค่า config ทั้งหมดของ service
 type Config struct {
-	Env   string // "development" | "production"
-	HTTP  HTTPConfig
-	DB    DBConfig
-	Log   LogConfig
-	Auth  AuthConfig
-	Redis RedisConfig
+	Env    string // "development" | "production"
+	HTTP   HTTPConfig
+	DB     DBConfig
+	Log    LogConfig
+	Auth   AuthConfig
+	Redis  RedisConfig
+	Ticket TicketConfig
+}
+
+// TicketConfig ค่าเชื่อม external API ของ ticket (ไม่ใช่ DB)
+// BaseURL ใช้ PAWN_URL (host ของ pawnshop API) — path ของแต่ละ function ต่อในโค้ด
+type TicketConfig struct {
+	BaseURL string        // base host จาก env PAWN_URL เช่น https://pawnshop-api-dev.../
+	APIKey  string        // ส่งผ่าน header (อย่า hardcode — อ่านจาก env)
+	Timeout time.Duration // timeout ต่อ request
 }
 
 // LogConfig ค่าเกี่ยวกับ structured logging
@@ -111,6 +120,11 @@ func Load() Config {
 			Addr:     getEnv("REDIS_ADDR", "localhost:6379"),
 			Password: getEnv("REDIS_PASSWORD", ""),
 			DB:       getEnvInt("REDIS_DB", 0),
+		},
+		Ticket: TicketConfig{
+			BaseURL: getEnv("PAWN_URL", "http://localhost"),
+			APIKey:  getEnv("TICKET_API_KEY", ""),
+			Timeout: getEnvDuration("TICKET_API_TIMEOUT", 10*time.Second),
 		},
 	}
 }
